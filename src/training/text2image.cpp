@@ -456,6 +456,7 @@ static int Main() {
   char font_desc_name[1024];
   snprintf(font_desc_name, 1024, "%s %d", FLAGS_font.c_str(),
            static_cast<int>(FLAGS_ptsize));
+  // TODO banglh Try to understand StringRenderer class
   StringRenderer render(font_desc_name, FLAGS_xsize, FLAGS_ysize);
   render.set_add_ligatures(FLAGS_ligatures);
   render.set_leading(FLAGS_leading);
@@ -595,6 +596,7 @@ static int Main() {
                                                strlen(to_render_utf8 + offset),
                                                &font_used, &pix);
       } else {
+        // TODO banglh Render text to image
         offset += render.RenderToImage(to_render_utf8 + offset,
                                        strlen(to_render_utf8 + offset), &pix);
       }
@@ -605,6 +607,7 @@ static int Main() {
           rotation = -1 * page_rotation[page_num];
         }
         if (FLAGS_degrade_image) {
+          // TODO Degrade image
           pix = DegradeImage(pix, FLAGS_exposure, &randomizer,
                              FLAGS_rotate_image ? &rotation : nullptr);
         }
@@ -615,10 +618,11 @@ static int Main() {
           page_rotation.push_back(rotation);
         }
 
-        Pix* gray_pix = pixConvertTo8(pix, false);
+        // TODO banglh convert image
+        Pix* binary = pixConvertTo8(pix, false);
         pixDestroy(&pix);
-        Pix* binary = pixThresholdToBinary(gray_pix, 128);
-        pixDestroy(&gray_pix);
+//        Pix* binary = pixThresholdToBinary(gray_pix, 128);
+//        pixDestroy(&gray_pix);
         char tiff_name[1024];
         if (FLAGS_find_fonts) {
           if (FLAGS_render_per_font) {
@@ -633,7 +637,9 @@ static int Main() {
           }
         } else {
           snprintf(tiff_name, 1024, "%s.tif", FLAGS_outputbase.c_str());
-          pixWriteTiff(tiff_name, binary, IFF_TIFF_G4, im == 0 ? "w" : "a");
+          // TODO banglh Save image to .tif file
+//          pixWriteTiff(tiff_name, binary, IFF_TIFF_G4, im == 0 ? "w" : "a");
+          pixWriteTiff(tiff_name, binary, IFF_TIFF, im == 0 ? "w" : "a");
           tprintf("Rendered page %d to file %s\n", im, tiff_name);
         }
         // Make individual glyphs
@@ -652,6 +658,7 @@ static int Main() {
     }
   }
   if (!FLAGS_find_fonts) {
+    // TODO banglh Main code to make .box file
     std::string box_name = FLAGS_outputbase.c_str();
     box_name += ".box";
     render.WriteAllBoxes(box_name);
