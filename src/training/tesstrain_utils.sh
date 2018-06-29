@@ -208,15 +208,19 @@ initialize_fontconfig() {
 # language/font combination in a way that can be run in parallel.
 generate_font_image() {
     local font="$1"
+    local degrade="$2"
     tlog "Rendering using ${font}"
     local fontname=$(echo ${font} | tr ' ' '_' | sed 's/,//g')
-    local outbase=${TRAINING_DIR}/${LANG_CODE}.${fontname}.exp${EXPOSURE}
+    local outbase=${TRAINING_DIR}/${LANG_CODE}.${fontname}.exp${EXPOSURE}.degrade-$(echo ${degrade})
 
     local common_args="--fontconfig_tmpdir=${FONT_CONFIG_CACHE}"
     common_args+=" --fonts_dir=${FONTS_DIR} --strip_unrenderable_words"
     common_args+=" --leading=${LEADING}"
     common_args+=" --char_spacing=${CHAR_SPACING} --exposure=${EXPOSURE}"
     common_args+=" --outputbase=${outbase} --max_pages=0"
+    if [[ "${degrade}" == "false" ]]; then
+      common_args+=" --degrade_image=false"
+    fi
 
     # add --writing_mode=vertical-upright to common_args if the font is
     # specified to be rendered vertically.
@@ -269,8 +273,17 @@ phase_I_generate_image() {
 
         local counter=0
         for font in "${FONTS[@]}"; do
+            # Generate non-degraded image
             sleep 1
-            generate_font_image "${font}" &
+            generate_font_image "${font}" false &
+            let counter=counter+1
+            let rem=counter%par_factor
+            if [[ "${rem}" -eq 0 ]]; then
+              wait
+            fi
+            # Generate degraded image
+            sleep 1
+            generate_font_image "${font}" true &
             let counter=counter+1
             let rem=counter%par_factor
             if [[ "${rem}" -eq 0 ]]; then
@@ -281,7 +294,9 @@ phase_I_generate_image() {
         # Check that each process was successful.
         for font in "${FONTS[@]}"; do
             local fontname=$(echo ${font} | tr ' ' '_' | sed 's/,//g')
-            local outbase=${TRAINING_DIR}/${LANG_CODE}.${fontname}.exp${EXPOSURE}
+            local outbase=${TRAINING_DIR}/${LANG_CODE}.${fontname}.exp${EXPOSURE}.degrade-true
+            check_file_readable ${outbase}.box ${outbase}.tif
+            outbase=${TRAINING_DIR}/${LANG_CODE}.${fontname}.exp${EXPOSURE}.degrade-false
             check_file_readable ${outbase}.box ${outbase}.tif
         done
     done
@@ -388,7 +403,7 @@ phase_E_extract_features() {
 
     local img_files=""
     for exposure in ${EXPOSURES}; do
-        img_files=${img_files}' '$(ls ${TRAINING_DIR}/*.exp${exposure}.tif)
+        img_files=${img_files}' '$(ls ${TRAINING_DIR}/*.exp${exposure}.*.tif)
     done
 
     # Use any available language-specific configs.
