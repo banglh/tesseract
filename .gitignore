@@ -110,3 +110,9 @@ kernel*.bin
 times.txt
 /unlvtests/results*
 
+# banglh ignored files
+**/*.swp
+.idea
+api
+langdata
+training

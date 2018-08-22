@@ -44,7 +44,6 @@
 # your system is to run text2image with --list_available_fonts and the
 # appropriate --fonts_dir path.
 
-
 source "$(dirname $0)/tesstrain_utils.sh"
 
 ARGV=("$@")
@@ -59,6 +58,13 @@ set_lang_specific_parameters ${LANG_CODE}
 initialize_fontconfig
 
 phase_I_generate_image 8
+
+# [banglh] Run script to add additional noise to existing tif images
+tlog "\n=== Generate .tif files with noise in '${TRAINING_DIR}'"
+. $HOME/virtualenvs/tesseract-test/bin/activate
+python $HOME/projects/python/tesseract_test/utils/modify_tif.py --training_dir=${TRAINING_DIR}
+# [banglh] ##########################################################
+
 phase_UP_generate_unicharset
 if ((LINEDATA)); then
   phase_E_extract_features "lstm.train" 8 "lstmf"
